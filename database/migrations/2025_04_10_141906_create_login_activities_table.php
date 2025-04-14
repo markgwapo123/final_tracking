@@ -14,13 +14,14 @@ return new class extends Migration
         Schema::create('login_activities', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('user_id');
-            $table->ipAddress('ip_address')->nullable();
+            $table->string('ip_address')->nullable();
             $table->text('device_info')->nullable();
             $table->timestamp('logged_in_at')->nullable();
             $table->timestamps();
-    
+        
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
         });
+        
     }
     
     /**

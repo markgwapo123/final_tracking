@@ -15,4 +15,5 @@ class LoginActivity extends Model
         'device_info',
         'logged_in_at',
     ];
+    
 }
