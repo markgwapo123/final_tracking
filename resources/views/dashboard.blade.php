@@ -7,91 +7,130 @@
 
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
-            {{-- Logged-in Confirmation --}}
+            {{-- Status --}}
             <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6 text-gray-900 dark:text-gray-100">
-                    {{ __("You're logged in!") }}
+                    {{ __("You're logged in!") }} 
                 </div>
             </div>
 
-            {{-- Login Activity Table --}}
+            {{-- Activity Table --}}
             <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6">
-                    <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">Your Login Activity</h2>
+                    <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">Your Active Tabs</h2>
 
                     <div class="overflow-x-auto">
-                        <table class="min-w-full table-auto text-sm text-left text-gray-700 dark:text-gray-300">
-                            <thead class="border-b bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-100 uppercase text-xs">
-                                <tr>
-                                    <th class="px-4 py-2">Login Time</th>
-                                    <th class="px-4 py-2">IP Address</th>
-                                    <th class="px-4 py-2">Device Info</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-                                @forelse ($activities as $activity)
-                                    <tr>
-                                        <td class="px-4 py-2">{{ $activity->logged_in_at }}</td>
-                                        <td class="px-4 py-2">{{ $activity->ip_address }}</td>
-                                        <td class="px-4 py-2">{{ $activity->device_info }}</td>
-                                    </tr>
-                                @empty
-                                    <tr>
-                                        <td colspan="3" class="px-4 py-2 text-center">No activity found.</td>
-                                    </tr>
-                                @endforelse
-                            </tbody>
-                        </table>
-                    </div>
+                        {{-- Activity Table --}}
+<div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
+    <div class="p-6">
+        <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">Your Active Tabs</h2>
 
-                    {{-- Pagination (if using paginate()) --}}
-                    @if(method_exists($activities, 'links'))
-                        <div class="mt-4">
-                            {{ $activities->links() }}
-                        </div>
-                    @endif
+        <div class="overflow-x-auto">
+            <table class="min-w-full text-sm text-left text-gray-500 dark:text-gray-400">
+                <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+                    <tr>
+                        <th class="px-6 py-3">LOGIN TIME</th>
+                        <th class="px-6 py-3">LAST ACTIVE</th>
+                        <th class="px-6 py-3">STATUS</th>
+                        <th class="px-6 py-3">IP</th>
+                        <th class="px-6 py-3">TAB ID</th>
+                        <th class="px-6 py-3">TITLE</th>
+                        <th class="px-6 py-3">DEVICE INFO</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse($activities as $activity)
+                        <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700">
+                            <td class="px-6 py-4">
+                                {{ \Carbon\Carbon::parse($activity->logged_in_at)->format('M d, Y h:i A') }}
+                            </td>
+                            <td class="px-6 py-4">
+                                {{ \Carbon\Carbon::parse($activity->last_active)->diffForHumans() }}
+                            </td>
+                            <td class="px-6 py-4">
+                                @if ($activity->closed_at)
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300">
+                                        Closed
+                                    </span>
+                                @else
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300">
+                                        Active
+                                    </span>
+                                @endif
+                            </td>
+                            <td class="px-6 py-4">{{ e($activity->ip_address) }}</td>
+                            <td class="px-6 py-4">{{ e($activity->tab_id) }}</td>
+                            <td class="px-6 py-4">{{ e($activity->tab_title) }}</td>
+                            <td class="px-6 py-4">{{ e($activity->device_info) }}</td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="7" class="px-6 py-4 text-center">No activity records found.</td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-    {{-- JavaScript: Track Tab Info --}}
+    {{-- JavaScript --}}
     <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            const tabId = Date.now() + '-' + Math.random().toString(36).substring(2, 11);
-            const currentTabTitle = document.title || 'Untitled Page';
-            const userAgent = navigator.userAgent;
-
-            // Save tab ID in localStorage to count open tabs
-            let openTabs = JSON.parse(localStorage.getItem('openTabs') || '[]');
-            if (!openTabs.includes(tabId)) {
-                openTabs.push(tabId);
-                localStorage.setItem('openTabs', JSON.stringify(openTabs));
+        document.addEventListener('DOMContentLoaded', () => {
+            // Generate or retrieve persistent tab ID
+            let tabId = sessionStorage.getItem('tab_id');
+            if (!tabId) {
+                tabId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+                sessionStorage.setItem('tab_id', tabId);
             }
 
-            // Send tab info to backend
-            fetch("{{ url('/track-tab-info') }}", {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                },
-                body: JSON.stringify({
+            // Unified tracking function
+            const trackTab = (additionalData = {}) => {
+                const payload = {
                     tab_id: tabId,
-                    tabs_open: openTabs.length,
-                    user_agent: userAgent,
-                    tab_title: currentTabTitle
-                })
-            })
-            .then(response => response.json())
-            .then(data => console.log('✅ Tab info sent:', data))
-            .catch(err => console.error('❌ Error sending tab info:', err));
+                    tab_title: document.title,
+                    user_agent: navigator.userAgent,
+                    last_active: new Date().toISOString(),
+                    ...additionalData
+                };
 
-            // Remove tab ID from localStorage on close
-            window.addEventListener('beforeunload', function () {
-                let openTabs = JSON.parse(localStorage.getItem('openTabs') || '[]');
-                openTabs = openTabs.filter(id => id !== tabId);
-                localStorage.setItem('openTabs', JSON.stringify(openTabs));
+                fetch("{{ route('track.tab') }}", {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                    },
+                    body: JSON.stringify(payload)
+                })
+                .catch(error => console.error('Tracking error:', error));
+            };
+
+            // Initial registration
+            trackTab();
+
+            // Heartbeat every 30 seconds
+            const heartbeat = setInterval(() => trackTab(), 30000);
+
+            // Handle tab closure
+            window.addEventListener('beforeunload', () => {
+                clearInterval(heartbeat);
+                navigator.sendBeacon("{{ route('close.tab') }}", JSON.stringify({
+                    tab_id: tabId,
+                    _token: '{{ csrf_token() }}'
+                }));
+            });
+
+            // Handle browser crash/recovery
+            window.addEventListener('pageshow', (event) => {
+                if (event.persisted) {
+                    trackTab({ recovery: true });
+                }
             });
         });
     </script>

@@ -1,40 +1,61 @@
 <?php
 
-use App\Http\Controllers\ProfileController;
+use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\DashboardController;
-use App\Http\Controllers\TabTrackerController;
-use App\Http\Controllers\PcLockController;
+use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\TrackTabInfoController;
 use App\Http\Controllers\LoginActivityController;
-use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\PcLockController;
 
-// PC Lock Routes
-Route::post('/pc-login', [PcLockController::class, 'login']);
-Route::post('/pc-logout', [PcLockController::class, 'logout']);
+/*
+|--------------------------------------------------------------------------
+| Public Routes
+|--------------------------------------------------------------------------
+*/
 
-// Home Route
 Route::get('/', function () {
     return view('welcome');
 });
 
-// Track Tab Info Routes (with middleware)
-Route::post('/track-tab-info', [TrackTabInfoController::class, 'store'])->middleware('auth');
-Route::post('/track-tab-info', [TabTrackerController::class, 'store'])->middleware('auth');
+/*
+|--------------------------------------------------------------------------
+| PC Lock API Routes
+|--------------------------------------------------------------------------
+*/
 
-// Update Tab Title Route (no middleware)
-Route::post('/update-tab-title', [LoginActivityController::class, 'updateTabTitle']);
+Route::post('/pc-login', [PcLockController::class, 'login']);
+Route::post('/pc-logout', [PcLockController::class, 'logout']);
 
-// Dashboard Routes with auth and verified middleware
-Route::middleware(['auth', 'verified'])->group(function () {
+/*
+|--------------------------------------------------------------------------
+| Authenticated Routes
+|--------------------------------------------------------------------------
+*/
+
+Route::middleware(['auth'])->group(function () {
+    // Dashboard
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
-});
 
-// Profile Routes (auth middleware)
-Route::middleware('auth')->group(function () {
+    // Track tab activity with named routes
+    Route::post('/track-tab-info', [TrackTabInfoController::class, 'store'])
+        ->name('track.tab');  // Added route name here
+    
+    Route::post('/close-tab', [TrackTabInfoController::class, 'closeTab'])
+        ->name('close.tab');
+
+    // Update tab title
+    Route::post('/update-tab-title', [LoginActivityController::class, 'updateTabTitle']);
+
+    // Profile
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
-// Auth Routes
+/*
+|--------------------------------------------------------------------------
+| Auth Routes (Breeze or Jetstream)
+|--------------------------------------------------------------------------
+*/
+
 require __DIR__.'/auth.php';

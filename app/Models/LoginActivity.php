@@ -12,8 +12,17 @@ class LoginActivity extends Model
     protected $fillable = [
         'user_id',
         'ip_address',
+        'tab_id',
+        'tab_title',
         'device_info',
         'logged_in_at',
+        'logged_out_at',
+        'last_active' // Add this
     ];
-    
+
+    protected $dates = [
+        'logged_in_at',
+        'logged_out_at',
+        'last_active'
+    ];
 }

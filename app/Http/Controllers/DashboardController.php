@@ -11,9 +11,12 @@ class DashboardController extends Controller
     public function index()
     {
         $activities = LoginActivity::where('user_id', Auth::id())
-                        ->orderBy('logged_in_at', 'desc')
-                        ->get(); // or paginate(10)
-
-        return view('dashboard', compact('activities'));
+            ->whereNull('closed_at') // Now matches the database column
+            ->orderBy('logged_in_at', 'desc')
+            ->get();
+    
+        $tabCount = $activities->count();
+    
+        return view('dashboard', compact('activities', 'tabCount'));
     }
 }

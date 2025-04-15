@@ -4,40 +4,59 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\LoginActivity;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
-
-
+use Carbon\Carbon;
 
 class TrackTabInfoController extends Controller
 {
+    // Track or update active tab info
     public function store(Request $request)
     {
-        $user = Auth::user();
-if (!$user) {
-    return response()->json(['error' => 'Unauthenticated'], 401);
-}
+        $request->validate([
+            'tab_id' => 'required|string',
+            'tab_title' => 'required|string',
+            'user_agent' => 'required|string',
+        ]);
 
-
-        // Find recent login to avoid duplicates
-        $recentActivity = LoginActivity::where('user_id', $user->id)
-            ->where('logged_in_at', '>=', Carbon::now()->subSeconds(10))
-            ->latest()
-            ->first();
-
-        if ($recentActivity) {
-            $recentActivity->update([
-                'device_info' => 'Tab Title: ' . $request->tab_title . ', User Agent: ' . $request->user_agent,
-            ]);
-        } else {
-            LoginActivity::create([
-                'user_id'     => $user->id,
-                'ip_address'  => $request->ip(),
-                'device_info' => 'Tab Title: ' . $request->tab_title . ', User Agent: ' . $request->user_agent,
-                'logged_in_at'=> now(),
-            ]);
+        if (!Auth::check()) {
+            return response()->json(['error' => 'Unauthenticated'], 401);
         }
 
-        return response()->json(['message' => 'Activity tracked']);
+        LoginActivity::updateOrCreate(
+            [
+                'user_id' => Auth::id(),
+                'tab_id' => $request->tab_id
+            ],
+            [
+                'ip_address'    => $request->ip(),
+                'tab_title'     => $request->tab_title,
+                'device_info'   => $request->user_agent,
+                'logged_in_at'  => Carbon::now('Asia/Manila'), // Initial login
+                'last_active'   => Carbon::now('Asia/Manila'), // For updates
+            ]
+        );
+
+        return response()->json(['status' => 'Tab tracked successfully']);
+    }
+
+    // When tab is closed
+    public function closeTab(Request $request)
+    {
+        $request->validate([
+            'tab_id' => 'required|string'
+        ]);
+
+        if (!Auth::check()) {
+            return response()->json(['error' => 'Unauthenticated'], 401);
+        }
+
+        LoginActivity::where('tab_id', $request->tab_id)
+            ->where('user_id', Auth::id())
+            ->update([
+                'closed_at'   => Carbon::now('Asia/Manila'),
+                'last_active' => Carbon::now('Asia/Manila'),
+            ]);
+
+        return response()->json(['status' => 'Tab closed successfully']);
     }
 }
