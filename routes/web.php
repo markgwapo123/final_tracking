@@ -6,6 +6,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\TrackTabInfoController;
 use App\Http\Controllers\LoginActivityController;
 use App\Http\Controllers\PcLockController;
+use App\Http\Controllers\PcAccessController;
 
 /*
 |--------------------------------------------------------------------------
@@ -23,8 +24,6 @@ Route::get('/', function () {
 |--------------------------------------------------------------------------
 */
 
-Route::post('/pc-login', [PcLockController::class, 'login']);
-Route::post('/pc-logout', [PcLockController::class, 'logout']);
 
 /*
 |--------------------------------------------------------------------------
@@ -38,7 +37,7 @@ Route::middleware(['auth'])->group(function () {
 
     // Track tab activity with named routes
     Route::post('/track-tab-info', [TrackTabInfoController::class, 'store'])
-        ->name('track.tab');  // Added route name here
+        ->name('track.tab');
     
     Route::post('/close-tab', [TrackTabInfoController::class, 'closeTab'])
         ->name('close.tab');
@@ -51,6 +50,9 @@ Route::middleware(['auth'])->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
+
+// PC Access Checker (used optionally if needed)
+Route::post('/pc/check-access', [PcAccessController::class, 'checkAccess']);
 
 /*
 |--------------------------------------------------------------------------

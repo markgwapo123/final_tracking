@@ -16,12 +16,13 @@ class TrackTabInfoController extends Controller
             'tab_id' => 'required|string',
             'tab_title' => 'required|string',
             'user_agent' => 'required|string',
+            'computer_name' => 'required|string',  // Added validation for computer_name
         ]);
-
+    
         if (!Auth::check()) {
             return response()->json(['error' => 'Unauthenticated'], 401);
         }
-
+    
         LoginActivity::updateOrCreate(
             [
                 'user_id' => Auth::id(),
@@ -33,11 +34,13 @@ class TrackTabInfoController extends Controller
                 'device_info'   => $request->user_agent,
                 'logged_in_at'  => Carbon::now('Asia/Manila'), // Initial login
                 'last_active'   => Carbon::now('Asia/Manila'), // For updates
+                'computer_name' => $request->computer_name // Save computer name here
             ]
         );
-
+    
         return response()->json(['status' => 'Tab tracked successfully']);
     }
+    
 
     // When tab is closed
     public function closeTab(Request $request)

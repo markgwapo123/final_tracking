@@ -81,25 +81,34 @@
     </div>
 
     {{-- JavaScript --}}
+    {{-- JavaScript --}}
     <script>
         document.addEventListener('DOMContentLoaded', () => {
+            // Prompt for computer name and store in sessionStorage (if not already set)
+            let computerName = sessionStorage.getItem('computer_name');
+            if (!computerName) {
+                computerName = prompt("Please enter your computer name (e.g., PC-LAB-01):");
+                sessionStorage.setItem('computer_name', computerName);
+            }
+    
             // Generate or retrieve persistent tab ID
             let tabId = sessionStorage.getItem('tab_id');
             if (!tabId) {
                 tabId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
                 sessionStorage.setItem('tab_id', tabId);
             }
-
+    
             // Unified tracking function
             const trackTab = (additionalData = {}) => {
                 const payload = {
                     tab_id: tabId,
                     tab_title: document.title,
                     user_agent: navigator.userAgent,
+                    computer_name: computerName,  // Include computer name in payload
                     last_active: new Date().toISOString(),
                     ...additionalData
                 };
-
+    
                 fetch("{{ route('track.tab') }}", {
                     method: 'POST',
                     headers: {
@@ -110,23 +119,23 @@
                 })
                 .catch(error => console.error('Tracking error:', error));
             };
-
-            // Initial registration
+    
+            // Initial registration when page loads
             trackTab();
-
-            // Heartbeat every 30 seconds
+    
+            // Heartbeat every 30 seconds to track tab activity
             const heartbeat = setInterval(() => trackTab(), 30000);
-
+    
             // Handle tab closure
             window.addEventListener('beforeunload', () => {
-                clearInterval(heartbeat);
+                clearInterval(heartbeat);  // Stop heartbeat when tab is closed
                 navigator.sendBeacon("{{ route('close.tab') }}", JSON.stringify({
                     tab_id: tabId,
                     _token: '{{ csrf_token() }}'
                 }));
             });
-
-            // Handle browser crash/recovery
+    
+            // Handle browser crash/recovery and re-track the tab
             window.addEventListener('pageshow', (event) => {
                 if (event.persisted) {
                     trackTab({ recovery: true });
@@ -134,4 +143,6 @@
             });
         });
     </script>
+    
+
 </x-app-layout>

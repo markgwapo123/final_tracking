@@ -17,7 +17,8 @@ class LoginActivity extends Model
         'device_info',
         'logged_in_at',
         'logged_out_at',
-        'last_active' // Add this
+        'last_active',
+        'computer_name' // Add this
     ];
 
     protected $dates = [

@@ -3,32 +3,75 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use App\Models\User;
+use App\Models\LoginActivity;
+use Illuminate\Support\Facades\Hash;
 
 class PcLockController extends Controller
 {
+    // PC Unlock/Login from comlab
     public function login(Request $request)
     {
-        $credentials = $request->only('email', 'password');
+        $request->validate([
+            'email' => 'required|email',
+            'password' => 'required|string',
+            'computer_name' => 'required|string'
+        ]);
 
-        if (Auth::attempt($credentials)) {
-            return response()->json([
-                'status' => 'success',
-                'message' => 'Access granted.',
-                'user' => Auth::user()
-            ]);
+        $user = User::where('email', $request->email)->first();
+
+        if (!$user || !Hash::check($request->password, $user->password)) {
+            return response()->json(['message' => 'Invalid credentials'], 401);
         }
 
-        return response()->json([
-            'status' => 'error',
-            'message' => 'Invalid credentials.'
-        ], 401);
+        // Log activity
+        LoginActivity::create([
+            'user_id' => $user->id,
+            'ip_address' => $request->ip(),
+            'tab_id' => null,
+            'tab_title' => null,
+            'device_info' => $request->userAgent(),
+            'logged_in_at' => now(),
+            'computer_name' => $request->computer_name,
+        ]);
+
+        return response()->json(['message' => 'PC unlocked successfully.']);
     }
 
-    public function logout()
+    // 🔓 PC Unlock method for Electron app
+    public function unlockFromElectron(Request $request)
     {
-        Auth::logout();
-        return response()->json(['status' => 'logged_out']);
+        $request->merge([
+            'computer_name' => $request->computer_name ?? $request->header('X-Computer-Name', 'Unknown-PC'),
+        ]);
+
+        return $this->login($request);  // reuse existing login logic
+    }
+
+    // 🔒 PC Lock/Logout method
+    public function logout(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email',
+            'password' => 'required|string'
+        ]);
+
+        $user = User::where('email', $request->email)->first();
+
+        if (!$user || !Hash::check($request->password, $user->password)) {
+            return response()->json(['message' => 'Invalid credentials'], 401);
+        }
+
+        // Mark last login as logged out
+        $activity = LoginActivity::where('user_id', $user->id)
+            ->whereNull('logged_out_at')
+            ->latest()
+            ->first();
+
+        if ($activity) {
+            $activity->update(['logged_out_at' => now()]);
+        }
+
+        return response()->json(['message' => 'PC locked successfully.']);
     }
 }
