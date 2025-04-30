@@ -7,6 +7,7 @@ use App\Http\Controllers\TrackTabInfoController;
 use App\Http\Controllers\LoginActivityController;
 use App\Http\Controllers\PcLockController;
 use App\Http\Controllers\PcAccessController;
+use App\Http\Controllers\Admin\AdminController; // ✅ Fixed this line
 
 /*
 |--------------------------------------------------------------------------
@@ -18,12 +19,15 @@ Route::get('/', function () {
     return view('welcome');
 });
 
-/*
-|--------------------------------------------------------------------------
-| PC Lock API Routes
-|--------------------------------------------------------------------------
-*/
+// ✅ Admin Login Page Route
+Route::get('/admin/login', function () {
+    return view('auth.admin-login');
+})->name('admin.login');
 
+// ✅ Admin Dashboard - protected with auth & admin middleware
+Route::middleware(['auth', 'admin'])->group(function () {
+    Route::get('/admin/dashboard', [AdminController::class, 'dashboard'])->name('admin.dashboard');
+});
 
 /*
 |--------------------------------------------------------------------------
@@ -32,31 +36,24 @@ Route::get('/', function () {
 */
 
 Route::middleware(['auth'])->group(function () {
-    // Dashboard
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
-    // Track tab activity with named routes
-    Route::post('/track-tab-info', [TrackTabInfoController::class, 'store'])
-        ->name('track.tab');
-    
-    Route::post('/close-tab', [TrackTabInfoController::class, 'closeTab'])
-        ->name('close.tab');
+    Route::post('/track-tab-info', [TrackTabInfoController::class, 'store'])->name('track.tab');
+    Route::post('/close-tab', [TrackTabInfoController::class, 'closeTab'])->name('close.tab');
 
-    // Update tab title
     Route::post('/update-tab-title', [LoginActivityController::class, 'updateTabTitle']);
 
-    // Profile
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
-// PC Access Checker (used optionally if needed)
+// Optional: PC Access API
 Route::post('/pc/check-access', [PcAccessController::class, 'checkAccess']);
 
 /*
 |--------------------------------------------------------------------------
-| Auth Routes (Breeze or Jetstream)
+| Auth Routes (Laravel Breeze or Jetstream)
 |--------------------------------------------------------------------------
 */
 
